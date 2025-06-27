@@ -1,0 +1,269 @@
+package gh
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/url"
+	"path"
+	"slices"
+	"strconv"
+	"strings"
+	"sync/atomic"
+
+	"github.com/expr-lang/expr"
+	"github.com/google/go-github/v71/github"
+	"github.com/k1LoW/gh-triage/config"
+	"github.com/k1LoW/go-github-client/v71/factory"
+	"github.com/pkg/browser"
+	"github.com/samber/lo"
+	"github.com/savioxavier/termlink"
+	"golang.org/x/sync/errgroup"
+)
+
+type Client struct {
+	config    *config.Config
+	client    *github.Client
+	w         io.Writer
+	readLimit atomic.Int64 // Limit the number of issues/pull requests to read
+	openLimit atomic.Int64 // Limit the number of issues/pull requests to open
+	listLimit atomic.Int64 // Limit the number of issues/pull requests to list
+}
+
+func New(cfg *config.Config, w io.Writer) (*Client, error) {
+	client, err := factory.NewGithubClient()
+	if err != nil {
+		return nil, err
+	}
+	return &Client{
+		config: cfg,
+		client: client,
+		w:      w,
+	}, nil
+}
+
+func (c *Client) Triage(ctx context.Context) error {
+	c.readLimit.Store(int64(c.config.Read.Max))
+	c.openLimit.Store(int64(c.config.Open.Max))
+	c.listLimit.Store(int64(c.config.List.Max))
+	page := 1
+	for {
+		notifications, _, err := c.client.Activity.ListNotifications(ctx, &github.NotificationListOptions{
+			ListOptions: github.ListOptions{
+				Page:    page,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if len(notifications) == 0 {
+			break
+		}
+		eg, ctx := errgroup.WithContext(ctx)
+		for _, n := range notifications {
+			eg.Go(func() error {
+				return c.action(ctx, n)
+			})
+		}
+		if err := eg.Wait(); err != nil {
+			return fmt.Errorf("failed to process notifications: %w", err)
+		}
+		page++
+	}
+
+	return nil
+}
+
+func (c *Client) action(ctx context.Context, n *github.Notification) error {
+	if c.readLimit.Load() <= 0 && c.openLimit.Load() <= 0 && c.listLimit.Load() <= 0 {
+		return nil // No more actions to perform
+	}
+	m := map[string]any{}
+	title := n.GetSubject().GetTitle()
+	u, err := url.Parse(n.GetSubject().GetURL())
+	if err != nil {
+		return fmt.Errorf("failed to parse URL: %w", err)
+	}
+	owner := n.GetRepository().GetOwner().GetLogin()
+	repo := n.GetRepository().GetName()
+	m["title"] = title
+	m["owner"] = owner
+	m["repo"] = repo
+
+	me, _, err := c.client.Users.Get(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to get authenticated user: %w", err)
+	}
+	m["me"] = me.GetLogin()
+
+	subjectType := n.GetSubject().GetType()
+	var htmlURL string
+	switch subjectType {
+	case "Issue":
+		m["is_pull_request"] = false
+		number, err := strconv.Atoi(path.Base(u.Path))
+		if err != nil {
+			return fmt.Errorf("failed to parse number from URL: %w", err)
+		}
+		m["number"] = number
+		issue, _, err := c.client.Issues.Get(ctx, owner, repo, number)
+		if err != nil {
+			return fmt.Errorf("failed to get issue: %w", err)
+		}
+		htmlURL = issue.GetHTMLURL()
+		m["state"] = issue.GetState()
+		m["closed"] = !issue.GetClosedAt().Equal(github.Timestamp{})
+		m["labels"] = lo.Map(issue.Labels, func(l *github.Label, _ int) string {
+			return l.GetName()
+		})
+		m["assignees"] = lo.Map(issue.Assignees, func(a *github.User, _ int) string {
+			return a.GetLogin()
+		})
+		m["author"] = issue.GetUser().GetLogin()
+		m["html_url"] = issue.GetHTMLURL()
+	case "PullRequest":
+		m["is_pull_request"] = true
+		number, err := strconv.Atoi(path.Base(u.Path))
+		if err != nil {
+			return fmt.Errorf("failed to parse number from URL: %w", err)
+		}
+		m["number"] = number
+		pr, _, err := c.client.PullRequests.Get(ctx, owner, repo, number)
+		if err != nil {
+			return fmt.Errorf("failed to get pull request: %w", err)
+		}
+		htmlURL = pr.GetHTMLURL()
+		m["state"] = pr.GetState()
+		m["draft"] = pr.GetDraft()
+		m["merged"] = pr.GetMerged()
+		m["mergeable"] = pr.GetMergeable()
+		m["mergeable_state"] = pr.GetMergeableState()
+		m["closed"] = !pr.GetClosedAt().Equal(github.Timestamp{})
+		m["labels"] = lo.Map(pr.Labels, func(l *github.Label, _ int) string {
+			return l.GetName()
+		})
+		m["reviewers"] = lo.Map(pr.RequestedReviewers, func(r *github.User, _ int) string {
+			return r.GetLogin()
+		})
+		m["review_teams"] = lo.Map(pr.RequestedTeams, func(t *github.Team, _ int) string {
+			return t.GetName()
+		})
+		m["assignees"] = lo.Map(pr.Assignees, func(a *github.User, _ int) string {
+			return a.GetLogin()
+		})
+		m["author"] = pr.GetUser().GetLogin()
+		m["html_url"] = pr.GetHTMLURL()
+		reviews, _, err := c.client.PullRequests.ListReviews(ctx, owner, repo, number, &github.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to list pull request reviews: %w", err)
+		}
+		slices.SortFunc(reviews, func(a, b *github.PullRequestReview) int {
+			return a.GetSubmittedAt().Compare(b.GetSubmittedAt().Time)
+		})
+		m["approved"] = false
+		var revewStates []string
+		for _, review := range reviews {
+			state := review.GetState()
+			revewStates = append(revewStates, state)
+			if state == "APPROVED" {
+				m["approved"] = true
+				break
+			}
+		}
+		m["review_states"] = revewStates
+		commitSHA := pr.GetHead().GetSHA()
+
+		combinedStatus, _, err := c.client.Repositories.GetCombinedStatus(ctx, owner, repo, commitSHA, &github.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get combined status: %w", err)
+		}
+		statusPassed := true
+		for _, status := range combinedStatus.Statuses {
+			if status.GetState() != "success" {
+				statusPassed = false
+				break
+			}
+		}
+		checkRuns, _, err := c.client.Checks.ListCheckRunsForRef(ctx, owner, repo, commitSHA, &github.ListCheckRunsOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to list check runs: %w", err)
+		}
+		checksPassed := true
+		for _, checkRun := range checkRuns.CheckRuns {
+			if checkRun.GetStatus() != "completed" || !slices.Contains([]string{"neutral", "skipped", "success"}, checkRun.GetConclusion()) {
+				checksPassed = false
+				break
+			}
+		}
+		m["status_passed"] = statusPassed
+		m["checks_passed"] = checksPassed
+		m["passed"] = statusPassed && checksPassed
+	}
+	open := false
+	if c.readLimit.Load() > 0 {
+		open, err = evalCond(c.config.Open.Conditions, m)
+		if err != nil {
+			return err
+		}
+		if open {
+			browser.OpenURL(htmlURL)
+			c.openLimit.Add(-1)
+		}
+	}
+	if !open {
+		if c.readLimit.Load() > 0 {
+			read, err := evalCond(c.config.Read.Conditions, m)
+			if err != nil {
+				return err
+			}
+			if read {
+				if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
+					return fmt.Errorf("failed to mark notification as read: %w", err)
+				}
+				c.readLimit.Add(-1)
+			}
+		}
+	}
+	if c.listLimit.Load() > 0 {
+		list, err := evalCond(c.config.List.Conditions, m)
+		if err != nil {
+			return err
+		}
+		if list {
+			if termlink.SupportsHyperlinks() {
+				if _, err := fmt.Fprintf(c.w, "%s\n", termlink.Link(title, htmlURL)); err != nil {
+					return err
+				}
+			} else {
+				if _, err := fmt.Fprintf(c.w, "%s ( %s )\n", title, htmlURL); err != nil {
+					return err
+				}
+			}
+			c.listLimit.Add(-1)
+		}
+	}
+	return nil
+}
+
+func evalCond(cond []string, m map[string]any) (bool, error) {
+	if len(cond) == 0 {
+		return false, nil
+	}
+	joined := strings.Join(lo.Map(cond, func(cond string, _ int) string {
+		if cond == "*" {
+			return "true"
+		}
+		return cond
+	}), " || ")
+	v, err := expr.Eval(joined, m)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate read condition: %w", err)
+	}
+	switch tf := v.(type) {
+	case bool:
+		return tf, nil
+	default:
+		return false, fmt.Errorf("unexpected type %T for read condition evaluation result", tf)
+	}
+}
