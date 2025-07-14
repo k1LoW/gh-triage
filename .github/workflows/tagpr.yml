@@ -38,9 +38,11 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+    env:
+      INPUT_TAG: ${{ needs.tagpr.outputs.tagpr-tag }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: cli/gh-extension-precompile@9e2237c30f869ad3bcaed6a4be2cd43564dd421b # v2.1.0
         with:
           generate_attestations: true
-          go_version_file: go.mod      
+          go_version_file: go.mod
