@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.2.1](https://github.com/k1LoW/gh-triage/compare/v0.2.0...v0.2.1) - 2025-07-14
+
 ## [v0.2.0](https://github.com/k1LoW/gh-triage/compare/v0.1.2...v0.2.0) - 2025-07-14
 - feat: support release by @k1LoW in https://github.com/k1LoW/gh-triage/pull/12
 
