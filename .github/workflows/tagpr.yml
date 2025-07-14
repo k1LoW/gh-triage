@@ -45,3 +45,8 @@ jobs:
           generate_attestations: true
           release_tag: ${{ needs.tagpr.outputs.tagpr-tag }}
           go_version_file: go.mod
+      - name: Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tagpr.outputs.tagpr-tag }}
+          files: dist/*
