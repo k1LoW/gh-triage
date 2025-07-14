@@ -44,7 +44,7 @@ open:
 
 list:
   max: 1000
-  conditions: # List all notifications
+  conditions: # List all unread notifications
     - "*"
 ```
 
@@ -90,7 +90,7 @@ gh-triage retrieves the following information for each notification, which can b
 
 ## Condition Evaluation System
 
-Conditions are evaluated using the expr-lang library. You can write conditions such as:
+Conditions are evaluated using the [expr-lang](https://expr-lang.org/) library. You can write conditions such as:
 
 ### Basic Conditions
 
