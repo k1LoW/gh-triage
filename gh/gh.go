@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"path"
 	"slices"
@@ -109,9 +110,33 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	subjectType := n.GetSubject().GetType()
 	var htmlURL string
 	var number int
+
+	// Initialize default values
+	m["is_issue"] = false
+	m["is_pull_request"] = false
+	m["is_release"] = false
+	m["number"] = -1
+	m["approved"] = false
+	m["review_states"] = []string{}
+	m["state"] = "unknown"
+	m["draft"] = false
+	m["merged"] = false
+	m["mergeable"] = false
+	m["mergeable_state"] = "unknown"
+	m["closed"] = false
+	m["labels"] = []string{}
+	m["reviewers"] = []string{}
+	m["review_teams"] = []string{}
+	m["assignees"] = []string{}
+	m["author"] = ""
+	m["html_url"] = ""
+	m["status_passed"] = false
+	m["checks_passed"] = false
+	m["passed"] = false
+
 	switch subjectType {
 	case "Issue":
-		m["is_pull_request"] = false
+		m["is_issue"] = true
 		number, err = strconv.Atoi(path.Base(u.Path))
 		if err != nil {
 			return fmt.Errorf("failed to parse number from URL: %w", err)
@@ -209,13 +234,15 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["status_passed"] = statusPassed
 		m["checks_passed"] = checksPassed
 		m["passed"] = statusPassed && checksPassed
+	case "Release":
+		m["is_release"] = true
+	default:
+		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
+		return nil // Skip unknown subject types
 	}
 	open := false
 	if c.openLimit.Load() > 0 {
-		open, err = evalCond(c.config.Open.Conditions, m)
-		if err != nil {
-			return err
-		}
+		open = evalCond(c.config.Open.Conditions, m)
 		if open {
 			if err := browser.OpenURL(htmlURL); err != nil {
 				return fmt.Errorf("failed to open URL in browser: %w", err)
@@ -225,10 +252,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	}
 	if !open {
 		if c.readLimit.Load() > 0 {
-			read, err := evalCond(c.config.Read.Conditions, m)
-			if err != nil {
-				return err
-			}
+			read := evalCond(c.config.Read.Conditions, m)
 			if read {
 				if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
 					return fmt.Errorf("failed to mark notification as read: %w", err)
@@ -238,10 +262,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 	}
 	if c.listLimit.Load() > 0 {
-		list, err := evalCond(c.config.List.Conditions, m)
-		if err != nil {
-			return err
-		}
+		list := evalCond(c.config.List.Conditions, m)
 		if list {
 			mark := "▬"
 			switch m["state"] {
@@ -271,24 +292,26 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	return nil
 }
 
-func evalCond(cond []string, m map[string]any) (bool, error) {
+func evalCond(cond []string, m map[string]any) bool {
 	if len(cond) == 0 {
-		return false, nil
+		return false
 	}
-	joined := strings.Join(lo.Map(cond, func(cond string, _ int) string {
+	joined := "(" + strings.Join(lo.Map(cond, func(cond string, _ int) string {
 		if cond == "*" {
 			return "true"
 		}
 		return cond
-	}), " || ")
+	}), ") || (") + ")"
 	v, err := expr.Eval(joined, m)
 	if err != nil {
-		return false, fmt.Errorf("failed to evaluate read condition: %w", err)
+		slog.Error("Failed to evaluate read condition", "cond", joined, "error", err)
+		return false
 	}
 	switch tf := v.(type) {
 	case bool:
-		return tf, nil
+		return tf
 	default:
-		return false, fmt.Errorf("unexpected type %T for read condition evaluation result", tf)
+		slog.Error("Condition did not evaluate to boolean", "cond", joined, "value", tf, "type", fmt.Sprintf("%T", tf))
+		return false
 	}
 }
