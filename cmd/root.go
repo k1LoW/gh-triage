@@ -27,6 +27,7 @@ import (
 
 	"github.com/k1LoW/gh-triage/config"
 	"github.com/k1LoW/gh-triage/gh"
+	"github.com/k1LoW/gh-triage/version"
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
 )
@@ -38,6 +39,7 @@ var rootCmd = &cobra.Command{
 	Long:          `gh-triage is a tool that helps you manage and triage GitHub issues and pull requests through notifications.`,
 	SilenceErrors: true,
 	Args:          cobra.NoArgs,
+	Version:       version.Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
