@@ -4,6 +4,7 @@ go 1.24.4
 
 require (
 	github.com/expr-lang/expr v1.17.5
+	github.com/fatih/color v1.18.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-github/v71 v71.0.0
 	github.com/k1LoW/go-github-client/v71 v71.0.17

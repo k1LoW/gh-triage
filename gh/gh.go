@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/expr-lang/expr"
+	"github.com/fatih/color"
 	"github.com/google/go-github/v71/github"
 	"github.com/k1LoW/gh-triage/config"
 	"github.com/k1LoW/go-github-client/v71/factory"
@@ -29,6 +30,14 @@ type Client struct {
 	openLimit atomic.Int64 // Limit the number of issues/pull requests to open
 	listLimit atomic.Int64 // Limit the number of issues/pull requests to list
 }
+
+var (
+	titleC  = color.New(color.FgWhite, color.Bold)
+	numberC = color.RGB(64, 64, 64)
+	openC   = color.RGB(31, 136, 61)
+	mergedC = color.RGB(130, 80, 223)
+	closedC = color.RGB(207, 34, 46)
+)
 
 func New(cfg *config.Config, w io.Writer) (*Client, error) {
 	client, err := factory.NewGithubClient()
@@ -99,10 +108,11 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 
 	subjectType := n.GetSubject().GetType()
 	var htmlURL string
+	var number int
 	switch subjectType {
 	case "Issue":
 		m["is_pull_request"] = false
-		number, err := strconv.Atoi(path.Base(u.Path))
+		number, err = strconv.Atoi(path.Base(u.Path))
 		if err != nil {
 			return fmt.Errorf("failed to parse number from URL: %w", err)
 		}
@@ -124,7 +134,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["html_url"] = issue.GetHTMLURL()
 	case "PullRequest":
 		m["is_pull_request"] = true
-		number, err := strconv.Atoi(path.Base(u.Path))
+		number, err = strconv.Atoi(path.Base(u.Path))
 		if err != nil {
 			return fmt.Errorf("failed to parse number from URL: %w", err)
 		}
@@ -233,12 +243,25 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			return err
 		}
 		if list {
+			mark := "▬"
+			switch m["state"] {
+			case "open":
+				mark = openC.Sprint(mark)
+			case "closed":
+				mark = closedC.Sprint(mark)
+			case "merged":
+				mark = mergedC.Sprint(mark)
+			}
+			number := numberC.Sprintf("%s %s/%s #%d", mark, owner, repo, number)
+			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
+				return err
+			}
 			if termlink.SupportsHyperlinks() {
-				if _, err := fmt.Fprintf(c.w, "%s\n", termlink.Link(title, htmlURL)); err != nil {
+				if _, err := fmt.Fprintf(c.w, "  %s\n", termlink.Link(titleC.Sprint(title), htmlURL)); err != nil {
 					return err
 				}
 			} else {
-				if _, err := fmt.Fprintf(c.w, "%s ( %s )\n", title, htmlURL); err != nil {
+				if _, err := fmt.Fprintf(c.w, "  %s ( %s )\n", titleC.Sprint(title), htmlURL); err != nil {
 					return err
 				}
 			}
