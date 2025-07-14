@@ -100,7 +100,7 @@ conditions:
   - "closed"                    # Closed Issue/PR
   - "approved"                  # Approved Pull Request
   - "is_pull_request"           # Pull Request
-  - "!is_pull_request"          # Issue
+  - "is_issue"                  # Issue
   - "state == 'open'"           # Open state
   - "passed"                    # All checks passed
 ```
