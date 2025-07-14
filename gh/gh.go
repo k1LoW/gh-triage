@@ -33,8 +33,8 @@ type Client struct {
 }
 
 var (
-	titleC  = color.New(color.FgWhite, color.Bold)
-	numberC = color.RGB(64, 64, 64)
+	titleC  = color.New(color.FgWhite)
+	numberC = color.RGB(128, 128, 128)
 	openC   = color.RGB(31, 136, 61)
 	mergedC = color.RGB(130, 80, 223)
 	closedC = color.RGB(207, 34, 46)
@@ -236,6 +236,16 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["passed"] = statusPassed && checksPassed
 	case "Release":
 		m["is_release"] = true
+		id, err := strconv.Atoi(path.Base(u.Path))
+		if err != nil {
+			return fmt.Errorf("failed to parse release ID from URL: %w", err)
+		}
+		r, _, err := c.client.Repositories.GetRelease(ctx, owner, repo, int64(id))
+		if err != nil {
+			return fmt.Errorf("failed to get release: %w", err)
+		}
+		htmlURL = r.GetHTMLURL()
+		m["html_url"] = r.GetHTMLURL()
 	default:
 		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
 		return nil // Skip unknown subject types
@@ -273,7 +283,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			case "merged":
 				mark = mergedC.Sprint(mark)
 			}
-			number := numberC.Sprintf("%s %s/%s #%d", mark, owner, repo, number)
+			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number)
 			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
 				return err
 			}
