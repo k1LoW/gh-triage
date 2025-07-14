@@ -110,6 +110,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	subjectType := n.GetSubject().GetType()
 	var htmlURL string
 	var number int
+	var isMerged bool
 
 	// Initialize default values
 	m["is_issue"] = false
@@ -172,6 +173,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["state"] = pr.GetState()
 		m["draft"] = pr.GetDraft()
 		m["merged"] = pr.GetMerged()
+		isMerged = pr.GetMerged()
 		m["mergeable"] = pr.GetMergeable()
 		m["mergeable_state"] = pr.GetMergeableState()
 		m["closed"] = !pr.GetClosedAt().Equal(github.Timestamp{})
@@ -280,8 +282,10 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 				mark = openC.Sprint(mark)
 			case "closed":
 				mark = closedC.Sprint(mark)
-			case "merged":
-				mark = mergedC.Sprint(mark)
+			default:
+				if isMerged {
+					mark = mergedC.Sprint(mark)
+				}
 			}
 			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number)
 			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
