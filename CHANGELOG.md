@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.1.2](https://github.com/k1LoW/gh-triage/compare/v0.1.1...v0.1.2) - 2025-07-14
+
 ## [v0.1.1](https://github.com/k1LoW/gh-triage/compare/v0.1.0...v0.1.1) - 2025-07-14
 - fix: improve notification handling and add support for releases by @k1LoW in https://github.com/k1LoW/gh-triage/pull/9
 
