@@ -162,16 +162,16 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			return a.GetSubmittedAt().Compare(b.GetSubmittedAt().Time)
 		})
 		m["approved"] = false
-		var revewStates []string
+		var reviewStates []string
 		for _, review := range reviews {
 			state := review.GetState()
-			revewStates = append(revewStates, state)
+			reviewStates = append(reviewStates, state)
 			if state == "APPROVED" {
 				m["approved"] = true
 				break
 			}
 		}
-		m["review_states"] = revewStates
+		m["review_states"] = reviewStates
 		commitSHA := pr.GetHead().GetSHA()
 
 		combinedStatus, _, err := c.client.Repositories.GetCombinedStatus(ctx, owner, repo, commitSHA, &github.ListOptions{})
@@ -201,13 +201,15 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["passed"] = statusPassed && checksPassed
 	}
 	open := false
-	if c.readLimit.Load() > 0 {
+	if c.openLimit.Load() > 0 {
 		open, err = evalCond(c.config.Open.Conditions, m)
 		if err != nil {
 			return err
 		}
 		if open {
-			browser.OpenURL(htmlURL)
+			if err := browser.OpenURL(htmlURL); err != nil {
+				return fmt.Errorf("failed to open URL in browser: %w", err)
+			}
 			c.openLimit.Add(-1)
 		}
 	}

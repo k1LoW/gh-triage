@@ -40,8 +40,9 @@ func configPath() string {
 	var dataHomePath string
 	if os.Getenv("XDG_DATA_HOME") != "" {
 		dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "gh-triage")
+	} else {
+		dataHomePath = filepath.Join(os.Getenv("HOME"), ".local", "share", "gh-triage")
 	}
-	dataHomePath = filepath.Join(os.Getenv("HOME"), ".local", "share", "gh-triage")
 	return filepath.Join(dataHomePath, "config.yml")
 }
 

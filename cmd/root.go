@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:           "gh-triage",
 	Short:         "gh-triage is a tool that helps you manage and triage GitHub issues and pull requests through unread notifications",
