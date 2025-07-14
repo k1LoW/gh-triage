@@ -23,7 +23,9 @@ $ gh extension install k1LoW/gh-triage
 ## Configuration
 
 The configuration file is located at:
-- `~/.local/share/gh-triage/config.yml`
+
+- `${XDG_DATA_HOME}/gh-triage/config.yml`
+- OR `~/.local/share/gh-triage/config.yml`
 
 It will be automatically created on first run.
 
@@ -32,15 +34,17 @@ It will be automatically created on first run.
 ```yaml
 read:
   max: 1000
-  conditions:
+  conditions: # Auto-mark merged PRs as read
     - "merged"
+
 open:
   max: 1
-  conditions:
+  conditions: # Open PRs awaiting my review
     - "is_pull_request && me in reviewers && passed && !approved && !draft && !closed && !merged"
+
 list:
   max: 1000
-  conditions:
+  conditions: # List all notifications
     - "*"
 ```
 
