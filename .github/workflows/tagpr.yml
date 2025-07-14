@@ -31,7 +31,8 @@ jobs:
         uses: Songmu/tagpr@ebb5da0cccdb47c533d4b520ebc0acd475b16614 # v1.7.0
 
   release:
-    needs: [tagpr]
+    needs: tagpr
+    if: needs.tagpr.outputs.tagpr-tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
