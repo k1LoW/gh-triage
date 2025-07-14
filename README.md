@@ -11,7 +11,7 @@ Key features of `gh-triage` are:
 ## Usage
 
 ```bash
-$ gh-triage
+$ gh triage
 ```
 
 ## Install
