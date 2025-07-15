@@ -87,6 +87,7 @@ gh-triage retrieves the following information for each notification, which can b
 | `status_passed` | `bool` | Whether status checks have passed | N/A |
 | `checks_passed` | `bool` | Whether checks have passed | N/A |
 | `passed` | `bool` | Whether both status checks and checks have passed | N/A |
+| `unread` | `bool` | Whether the PR is not marked as read | Whether the Issue is not marked as read |
 
 ## Condition Evaluation System
 

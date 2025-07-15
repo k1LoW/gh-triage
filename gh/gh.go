@@ -115,6 +115,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	var isMerged bool
 
 	// Initialize default values
+	m["unread"] = true
 	m["is_issue"] = false
 	m["is_pull_request"] = false
 	m["is_release"] = false
@@ -254,6 +255,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
 		return nil // Skip unknown subject types
 	}
+
 	open := false
 	if c.openLimit.Load() > 0 {
 		c.mu.Lock()
@@ -264,6 +266,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 				return fmt.Errorf("failed to open URL in browser: %w", err)
 			}
 			c.openLimit.Add(-1)
+			m["unread"] = false // Mark as read if opened
 		}
 		c.mu.Unlock()
 	}
@@ -277,6 +280,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 					return fmt.Errorf("failed to mark notification as read: %w", err)
 				}
 				c.readLimit.Add(-1)
+				m["unread"] = false // Mark as read if conditions are met
 			}
 			c.mu.Unlock()
 		}
