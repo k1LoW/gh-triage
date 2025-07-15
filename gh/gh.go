@@ -152,6 +152,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 		htmlURL = issue.GetHTMLURL()
 		m["state"] = issue.GetState()
+		m["open"] = issue.GetState() == "open"
 		m["closed"] = !issue.GetClosedAt().Equal(github.Timestamp{})
 		m["labels"] = lo.Map(issue.Labels, func(l *github.Label, _ int) string {
 			return l.GetName()
@@ -174,6 +175,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 		htmlURL = pr.GetHTMLURL()
 		m["state"] = pr.GetState()
+		m["open"] = pr.GetState() == "open"
 		m["draft"] = pr.GetDraft()
 		m["merged"] = pr.GetMerged()
 		isMerged = pr.GetMerged()

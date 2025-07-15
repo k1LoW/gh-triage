@@ -40,7 +40,7 @@ read:
 open:
   max: 1
   conditions: # Open PRs awaiting my review
-    - "is_pull_request && me in reviewers && passed && !approved && !draft && !closed && !merged"
+    - "is_pull_request && me in reviewers && passed && !approved && open && !draft"
 
 list:
   max: 1000
@@ -71,6 +71,7 @@ gh-triage retrieves the following information for each notification, which can b
 | `repo` | `string` | Repository name | Repository name |
 | `number` | `int` | Pull Request number | Issue number |
 | `state` | `string` | State of the PR (`open`, `closed`) | State of the Issue (`open`, `closed`) |
+| `open` | `bool` | Whether the PR is open | Whether the Issue is open |
 | `closed` | `bool` | Whether the PR is closed | Whether the Issue is closed |
 | `labels` | `[]string` | List of labels attached to the PR | List of labels attached to the Issue |
 | `assignees` | `[]string` | List of assigned users | List of assigned users |
