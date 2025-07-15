@@ -31,9 +31,9 @@ var defaultConfig = &Config{
 		Conditions: []string{"is_pull_request && me in reviewers && passed && !approved && !draft && !closed && !merged"},
 	},
 	List: Action{
-		Max:        1000, // Maximum number of issues/pull requests to list
+		Max:        1000,
 		Conditions: []string{"*"},
-	}, // List all issues/pull requests
+	},
 }
 
 func configPath() string {
