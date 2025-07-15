@@ -28,7 +28,7 @@ var defaultConfig = &Config{
 	},
 	Open: Action{
 		Max:        1,
-		Conditions: []string{"is_pull_request && me in reviewers && passed && !approved && !draft && !closed && !merged"},
+		Conditions: []string{"is_pull_request && me in reviewers && passed && !approved && open && !draft"},
 	},
 	List: Action{
 		Max:        1000,

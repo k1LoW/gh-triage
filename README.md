@@ -40,7 +40,7 @@ read:
 open:
   max: 1
   conditions: # Open PRs awaiting my review
-    - "is_pull_request && me in reviewers && passed && !approved && !draft && !closed && !merged"
+    - "is_pull_request && me in reviewers && passed && !approved && open && !draft"
 
 list:
   max: 1000
