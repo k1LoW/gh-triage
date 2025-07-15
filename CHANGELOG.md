@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.4.0](https://github.com/k1LoW/gh-triage/compare/v0.3.0...v0.4.0) - 2025-07-15
+- feat: add open field by @k1LoW in https://github.com/k1LoW/gh-triage/pull/18
+
 ## [v0.3.0](https://github.com/k1LoW/gh-triage/compare/v0.2.1...v0.3.0) - 2025-07-15
 - fix(client): add mutex to protect concurrent access to limits by @k1LoW in https://github.com/k1LoW/gh-triage/pull/15
 - feat(gh): add `unread` field and update its value based on notification actions by @k1LoW in https://github.com/k1LoW/gh-triage/pull/17
