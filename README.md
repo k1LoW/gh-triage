@@ -14,6 +14,32 @@ Key features of `gh-triage` are:
 $ gh triage
 ```
 
+
+### Profile Support
+
+`gh-triage` supports multiple configuration profiles. You can create different profiles for different workflows or environments.
+
+#### Using Profiles
+
+```bash
+# Use default profile
+$ gh triage
+
+# Use specific profile
+$ gh triage --profile work
+$ gh triage -p personal
+```
+
+#### Profile Configuration Files
+
+- Default profile: `default.yml`
+- Named profiles: `{profile-name}.yml`
+
+For example:
+- `~/.local/share/gh-triage/default.yml` (default profile)
+- `~/.local/share/gh-triage/work.yml` (work profile)
+- `~/.local/share/gh-triage/personal.yml` (personal profile)
+
 ## Install
 
 ```bash
@@ -24,10 +50,22 @@ $ gh extension install k1LoW/gh-triage
 
 The configuration file is located at:
 
-- `${XDG_DATA_HOME}/gh-triage/config.yml`
-- OR `~/.local/share/gh-triage/config.yml`
+- `${XDG_DATA_HOME}/gh-triage/default.yml` (if `XDG_DATA_HOME` is set)
+- OR `~/.local/share/gh-triage/default.yml` (default location)
 
 It will be automatically created on first run.
+
+### Configuration File Migration
+
+If you are upgrading from a previous version, your existing `config.yml` will be automatically migrated to `default.yml` on first run. The migration process:
+
+1. Checks if `default.yml` exists
+2. If not, looks for the old `config.yml` file
+3. If found, copies the content to `default.yml`
+4. Removes the old `config.yml` file
+5. Logs the migration process
+
+This ensures a smooth transition without losing your existing configuration.
 
 ### Default configuration
 
@@ -146,6 +184,26 @@ read:
 ```
 
 ### Open Issues and PRs related to yourself in browser
+
+
+## Command Line Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--profile` | `-p` | Specify profile name for configuration file |
+
+### Examples
+
+```bash
+# Use default profile
+$ gh triage
+
+# Use work profile
+$ gh triage --profile work
+
+# Use personal profile
+$ gh triage -p personal
+```
 
 ```yaml
 open:

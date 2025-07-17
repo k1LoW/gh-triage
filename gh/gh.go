@@ -16,7 +16,7 @@ import (
 	"github.com/expr-lang/expr"
 	"github.com/fatih/color"
 	"github.com/google/go-github/v71/github"
-	"github.com/k1LoW/gh-triage/config"
+	"github.com/k1LoW/gh-triage/profile"
 	"github.com/k1LoW/go-github-client/v71/factory"
 	"github.com/pkg/browser"
 	"github.com/samber/lo"
@@ -25,7 +25,7 @@ import (
 )
 
 type Client struct {
-	config    *config.Config
+	config    *profile.Profile
 	client    *github.Client
 	w         io.Writer
 	readLimit atomic.Int64 // Limit the number of issues/pull requests to read
@@ -42,7 +42,7 @@ var (
 	closedC = color.RGB(207, 34, 46)
 )
 
-func New(cfg *config.Config, w io.Writer) (*Client, error) {
+func New(cfg *profile.Profile, w io.Writer) (*Client, error) {
 	client, err := factory.NewGithubClient()
 	if err != nil {
 		return nil, err
