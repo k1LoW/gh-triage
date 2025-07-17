@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.5.0](https://github.com/k1LoW/gh-triage/compare/v0.4.0...v0.5.0) - 2025-07-17
+- feat(profile): add support for multiple configuration profiles by @k1LoW in https://github.com/k1LoW/gh-triage/pull/22
+
 ## [v0.4.0](https://github.com/k1LoW/gh-triage/compare/v0.3.0...v0.4.0) - 2025-07-15
 - feat: add open field by @k1LoW in https://github.com/k1LoW/gh-triage/pull/18
 
