@@ -25,12 +25,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/k1LoW/gh-triage/config"
 	"github.com/k1LoW/gh-triage/gh"
+	"github.com/k1LoW/gh-triage/profile"
 	"github.com/k1LoW/gh-triage/version"
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
 )
+
+var profileFlag string
 
 var rootCmd = &cobra.Command{
 	Use:           "gh-triage",
@@ -40,7 +42,7 @@ var rootCmd = &cobra.Command{
 	Args:          cobra.NoArgs,
 	Version:       version.Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := profile.Load(profileFlag)
 		if err != nil {
 			return err
 		}
@@ -63,4 +65,5 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVarP(&profileFlag, "profile", "p", "", "Profile name for configuration file")
 }
