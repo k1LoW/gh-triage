@@ -258,37 +258,32 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		return nil // Skip unknown subject types
 	}
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	open := false
 	if c.openLimit.Load() > 0 {
-		c.mu.Lock()
 		open = evalCond(c.config.Open.Conditions, m)
 		if open {
 			if err := browser.OpenURL(htmlURL); err != nil {
-				c.mu.Unlock()
 				return fmt.Errorf("failed to open URL in browser: %w", err)
 			}
 			c.openLimit.Add(-1)
 			m["unread"] = false // Mark as read if opened
 		}
-		c.mu.Unlock()
 	}
 	if !open {
 		if c.readLimit.Load() > 0 {
-			c.mu.Lock()
 			read := evalCond(c.config.Read.Conditions, m)
 			if read {
 				if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
-					c.mu.Unlock()
 					return fmt.Errorf("failed to mark notification as read: %w", err)
 				}
 				c.readLimit.Add(-1)
 				m["unread"] = false // Mark as read if conditions are met
 			}
-			c.mu.Unlock()
 		}
 	}
 	if c.listLimit.Load() > 0 {
-		c.mu.Lock()
 		list := evalCond(c.config.List.Conditions, m)
 		if list {
 			mark := "▬"
@@ -304,23 +299,19 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			}
 			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number)
 			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
-				c.mu.Unlock()
 				return err
 			}
 			if termlink.SupportsHyperlinks() {
 				if _, err := fmt.Fprintf(c.w, "  %s\n", termlink.Link(titleC.Sprint(title), htmlURL)); err != nil {
-					c.mu.Unlock()
 					return err
 				}
 			} else {
 				if _, err := fmt.Fprintf(c.w, "  %s ( %s )\n", titleC.Sprint(title), htmlURL); err != nil {
-					c.mu.Unlock()
 					return err
 				}
 			}
 			c.listLimit.Add(-1)
 		}
-		c.mu.Unlock()
 	}
 	return nil
 }
