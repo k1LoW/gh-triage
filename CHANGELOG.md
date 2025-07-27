@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.5.1](https://github.com/k1LoW/gh-triage/compare/v0.5.0...v0.5.1) - 2025-07-27
+- fix: simplify the locking logic by @k1LoW in https://github.com/k1LoW/gh-triage/pull/23
+
 ## [v0.5.0](https://github.com/k1LoW/gh-triage/compare/v0.4.0...v0.5.0) - 2025-07-17
 - feat(profile): add support for multiple configuration profiles by @k1LoW in https://github.com/k1LoW/gh-triage/pull/22
 
