@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.6.0](https://github.com/k1LoW/gh-triage/compare/v0.5.1...v0.6.0) - 2025-07-28
+- feat: show status in list by @k1LoW in https://github.com/k1LoW/gh-triage/pull/25
+
 ## [v0.5.1](https://github.com/k1LoW/gh-triage/compare/v0.5.0...v0.5.1) - 2025-07-27
 - fix: simplify the locking logic by @k1LoW in https://github.com/k1LoW/gh-triage/pull/23
 
