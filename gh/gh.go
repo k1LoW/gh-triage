@@ -40,6 +40,10 @@ var (
 	openC   = color.RGB(31, 136, 61)
 	mergedC = color.RGB(130, 80, 223)
 	closedC = color.RGB(207, 34, 46)
+
+	passedC     = color.RGB(31, 136, 61)
+	inProgressC = color.RGB(219, 171, 10)
+	failedC     = color.RGB(207, 34, 46)
 )
 
 func New(cfg *profile.Profile, w io.Writer) (*Client, error) {
@@ -137,6 +141,8 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	m["status_passed"] = false
 	m["checks_passed"] = false
 	m["passed"] = false
+	m["failed"] = false
+	m["in_progress"] = false
 
 	switch subjectType {
 	case "Issue":
@@ -221,10 +227,21 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			return fmt.Errorf("failed to get combined status: %w", err)
 		}
 		statusPassed := true
+		statusFailed := false
+		statusInProgress := false
+	L:
 		for _, status := range combinedStatus.Statuses {
-			if status.GetState() != "success" {
+			switch status.GetState() {
+			case "success":
+				continue
+			case "failure", "starup_failure":
+				fmt.Println("status:", status.GetState(), "context:", status.GetContext())
 				statusPassed = false
-				break
+				statusFailed = true
+				break L
+			default:
+				statusPassed = false
+				statusInProgress = true
 			}
 		}
 		checkRuns, _, err := c.client.Checks.ListCheckRunsForRef(ctx, owner, repo, commitSHA, &github.ListCheckRunsOptions{})
@@ -232,15 +249,28 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			return fmt.Errorf("failed to list check runs: %w", err)
 		}
 		checksPassed := true
+		checksFailed := false
+		checksInProgress := false
+	LL:
 		for _, checkRun := range checkRuns.CheckRuns {
-			if checkRun.GetStatus() != "completed" || !slices.Contains([]string{"neutral", "skipped", "success"}, checkRun.GetConclusion()) {
+			switch {
+			case checkRun.GetStatus() == "completed" && slices.Contains([]string{"neutral", "skipped", "success"}, checkRun.GetConclusion()):
+				continue
+			case slices.Contains([]string{"failure", "startup_failure"}, checkRun.GetStatus()) || slices.Contains([]string{"canceled", "failure", "stale", "timed_out"}, checkRun.GetConclusion()):
 				checksPassed = false
-				break
+				checksFailed = true
+				checksInProgress = false
+				break LL
+			case slices.Contains([]string{"expected", "in_progress", "pending", "queued", "requested", "waiting"}, checkRun.GetStatus()):
+				checksPassed = false
+				checksInProgress = true
 			}
 		}
 		m["status_passed"] = statusPassed
 		m["checks_passed"] = checksPassed
 		m["passed"] = statusPassed && checksPassed
+		m["failed"] = statusFailed || checksFailed
+		m["in_progress"] = statusInProgress || checksInProgress
 	case "Release":
 		m["is_release"] = true
 		id, err := strconv.Atoi(path.Base(u.Path))
@@ -297,7 +327,17 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 					mark = mergedC.Sprint(mark)
 				}
 			}
-			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number)
+			statusMark := "●"
+			if passed, ok := m["passed"].(bool); ok && passed {
+				statusMark = passedC.Sprint(statusMark)
+			} else if inProgress, ok := m["in_progress"].(bool); ok && inProgress {
+				statusMark = inProgressC.Sprint(statusMark)
+			} else if failed, ok := m["failed"].(bool); ok && failed {
+				statusMark = failedC.Sprint(statusMark)
+			} else {
+				statusMark = ""
+			}
+			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number) + " " + statusMark
 			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
 				return err
 			}
