@@ -22,9 +22,15 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/k1LoW/duration"
 	"github.com/k1LoW/gh-triage/gh"
 	"github.com/k1LoW/gh-triage/profile"
 	"github.com/k1LoW/gh-triage/version"
@@ -32,7 +38,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var profileFlag string
+var (
+	profileFlag  string
+	watch        bool
+	intervalFlag string
+)
 
 var rootCmd = &cobra.Command{
 	Use:           "gh-triage",
@@ -50,8 +60,58 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := c.Triage(cmd.Context()); err != nil {
-			return err
+		if watch {
+			interval, err := duration.Parse(intervalFlag)
+			if err != nil {
+				return fmt.Errorf("invalid interval: %w", err)
+			}
+
+			// Create context with cancellation for graceful shutdown
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+			// Start signal handler goroutine
+			go func() {
+				sig := <-sigCh
+				slog.Info("Received signal, shutting down gracefully", "signal", sig)
+				cancel()
+			}()
+
+			slog.Info("Starting watch mode", "interval", interval)
+
+			// Wait for initial interval before starting
+			select {
+			case <-time.After(interval):
+			case <-ctx.Done():
+				return nil
+			}
+
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+
+			if err := c.Triage(ctx); err != nil {
+				slog.Error("Triage failed", "error", err)
+			}
+
+			for {
+				select {
+				case <-ticker.C:
+					if err := c.Triage(ctx); err != nil {
+						slog.Error("Triage failed", "error", err)
+						// Continue watching even if triage fails (error continuation strategy)
+					}
+				case <-ctx.Done():
+					slog.Info("Watch mode stopped")
+					return nil
+				}
+			}
+
+		} else {
+			if err := c.Triage(cmd.Context()); err != nil {
+				return err
+			}
 		}
 		return nil
 	},
@@ -66,4 +126,6 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&profileFlag, "profile", "p", "", "Profile name for configuration file")
+	rootCmd.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "Watch for notifications")
+	rootCmd.PersistentFlags().StringVarP(&intervalFlag, "interval", "i", "5min", "Interval for watching notifications (e.g., 5min, 1hour)")
 }
