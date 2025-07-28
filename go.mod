@@ -7,6 +7,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-github/v71 v71.0.0
+	github.com/k1LoW/duration v1.2.0
 	github.com/k1LoW/go-github-client/v71 v71.0.17
 	github.com/mattn/go-colorable v0.1.13
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
