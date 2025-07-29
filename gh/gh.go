@@ -317,15 +317,13 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		list := evalCond(c.config.List.Conditions, m)
 		if list {
 			mark := "▬"
-			switch m["state"] {
-			case "open":
+			switch {
+			case m["state"] == "open":
 				mark = openC.Sprint(mark)
-			case "closed":
+			case isMerged:
+				mark = mergedC.Sprint(mark)
+			case m["state"] == "closed":
 				mark = closedC.Sprint(mark)
-			default:
-				if isMerged {
-					mark = mergedC.Sprint(mark)
-				}
 			}
 			statusMark := "●"
 			if passed, ok := m["passed"].(bool); ok && passed {
