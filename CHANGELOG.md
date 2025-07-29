@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.7.1](https://github.com/k1LoW/gh-triage/compare/v0.7.0...v0.7.1) - 2025-07-29
+- fix: correct state color handling by @k1LoW in https://github.com/k1LoW/gh-triage/pull/29
+
 ## [v0.7.0](https://github.com/k1LoW/gh-triage/compare/v0.6.0...v0.7.0) - 2025-07-28
 - feat: add watch mode with interval support by @k1LoW in https://github.com/k1LoW/gh-triage/pull/27
 
