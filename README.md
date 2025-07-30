@@ -9,12 +9,13 @@ Key features of `gh-triage` are:
 - **Open**: Open Issues and Pull Requests that match specified conditions in a browser
 - **List**: Display Issues and Pull Requests that match specified conditions in a list
 
+ref: [Managing notifications from your inbox](https://docs.github.com/en/account-and-profile/managing-subscriptions-and-notifications-on-github/viewing-and-triaging-notifications/managing-notifications-from-your-inbox)
+
 ## Usage
 
 ```bash
 $ gh triage
 ```
-
 
 ### Profile Support
 
