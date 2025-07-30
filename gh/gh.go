@@ -304,8 +304,9 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 	}
 	if !open {
+		done := false
 		if c.doneLimit.Load() > 0 {
-			done := evalCond(c.config.Done.Conditions, m)
+			done = evalCond(c.config.Done.Conditions, m)
 			if done {
 				id, err := strconv.ParseInt(n.GetID(), 10, 64)
 				if err != nil {
@@ -317,16 +318,16 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 				c.doneLimit.Add(-1)
 				m["unread"] = false // Mark as read if done
 			}
-			if !done {
-				if c.readLimit.Load() > 0 {
-					read := evalCond(c.config.Read.Conditions, m)
-					if read {
-						if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
-							return fmt.Errorf("failed to mark notification as read: %w", err)
-						}
-						c.readLimit.Add(-1)
-						m["unread"] = false // Mark as read if conditions are met
+		}
+		if !done {
+			if c.readLimit.Load() > 0 {
+				read := evalCond(c.config.Read.Conditions, m)
+				if read {
+					if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
+						return fmt.Errorf("failed to mark notification as read: %w", err)
 					}
+					c.readLimit.Add(-1)
+					m["unread"] = false // Mark as read if conditions are met
 				}
 			}
 		}
