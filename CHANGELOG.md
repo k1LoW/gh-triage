@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.8.1](https://github.com/k1LoW/gh-triage/compare/v0.8.0...v0.8.1) - 2025-07-30
+- fix: correct variable scope for `done` in notification handling by @k1LoW in https://github.com/k1LoW/gh-triage/pull/34
+
 ## [v0.8.0](https://github.com/k1LoW/gh-triage/compare/v0.7.1...v0.8.0) - 2025-07-30
 - feat: add support for marking notifications as done by @k1LoW in https://github.com/k1LoW/gh-triage/pull/31
 
