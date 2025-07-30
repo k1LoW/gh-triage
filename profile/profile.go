@@ -22,14 +22,15 @@ type Profile struct {
 
 var defaultProfile = &Profile{
 	Done: Action{
-		Max:        0,
-		Conditions: []string{},
-	},
-	Read: Action{
 		Max: 1000,
 		Conditions: []string{
 			"merged",
+			"closed",
 		},
+	},
+	Read: Action{
+		Max:        0,
+		Conditions: []string{},
 	},
 	Open: Action{
 		Max:        1,
