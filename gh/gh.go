@@ -28,6 +28,7 @@ type Client struct {
 	config    *profile.Profile
 	client    *github.Client
 	w         io.Writer
+	doneLimit atomic.Int64 // Limit the number of issues/pull requests to mark as done
 	readLimit atomic.Int64 // Limit the number of issues/pull requests to read
 	openLimit atomic.Int64 // Limit the number of issues/pull requests to open
 	listLimit atomic.Int64 // Limit the number of issues/pull requests to list
@@ -59,6 +60,7 @@ func New(cfg *profile.Profile, w io.Writer) (*Client, error) {
 }
 
 func (c *Client) Triage(ctx context.Context) error {
+	c.doneLimit.Store(int64(c.config.Done.Max))
 	c.readLimit.Store(int64(c.config.Read.Max))
 	c.openLimit.Store(int64(c.config.Open.Max))
 	c.listLimit.Store(int64(c.config.List.Max))
@@ -302,14 +304,30 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 	}
 	if !open {
-		if c.readLimit.Load() > 0 {
-			read := evalCond(c.config.Read.Conditions, m)
-			if read {
-				if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
-					return fmt.Errorf("failed to mark notification as read: %w", err)
+		if c.doneLimit.Load() > 0 {
+			done := evalCond(c.config.Done.Conditions, m)
+			if done {
+				id, err := strconv.ParseInt(n.GetID(), 10, 64)
+				if err != nil {
+					return fmt.Errorf("failed to parse notification ID: %w", err)
 				}
-				c.readLimit.Add(-1)
-				m["unread"] = false // Mark as read if conditions are met
+				if _, err := c.client.Activity.MarkThreadDone(ctx, id); err != nil {
+					return fmt.Errorf("failed to mark notification as done: %w", err)
+				}
+				c.doneLimit.Add(-1)
+				m["unread"] = false // Mark as read if done
+			}
+			if !done {
+				if c.readLimit.Load() > 0 {
+					read := evalCond(c.config.Read.Conditions, m)
+					if read {
+						if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
+							return fmt.Errorf("failed to mark notification as read: %w", err)
+						}
+						c.readLimit.Add(-1)
+						m["unread"] = false // Mark as read if conditions are met
+					}
+				}
 			}
 		}
 	}

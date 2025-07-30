@@ -4,7 +4,8 @@
 
 Key features of `gh-triage` are:
 
-- **Read**: Automatically mark Issues and Pull Requests that match specified conditions as read
+- **Done**: Mark Issues and Pull Requests that match specified conditions as done
+- **Read**: Mark Issues and Pull Requests that match specified conditions as read
 - **Open**: Open Issues and Pull Requests that match specified conditions in a browser
 - **List**: Display Issues and Pull Requests that match specified conditions in a list
 
@@ -70,10 +71,11 @@ This ensures a smooth transition without losing your existing configuration.
 ### Default configuration
 
 ```yaml
-read:
+done:
   max: 1000
-  conditions: # Auto-mark merged PRs as read
+  conditions: # Auto-mark merged and closed PRs / issues as done
     - "merged"
+    - "closed"
 
 open:
   max: 1
@@ -88,6 +90,7 @@ list:
 
 ### Options
 
+- `done`: Conditions and maximum number for marking as done
 - `read`: Conditions and maximum number for marking as read
 - `open`: Conditions and maximum number for opening in browser
 - `list`: Conditions and maximum number for listing
@@ -175,6 +178,25 @@ conditions:
 ```
 
 ## Usage Examples
+
+### Automatically mark merged Pull Requests and closed Issues as done
+
+```yaml
+done:
+  max: 1000
+  conditions:
+    - "merged"
+    - "closed"
+```
+
+### Mark failed CI Pull Requests as done
+
+```yaml
+done:
+  max: 100
+  conditions:
+    - "is_pull_request && failed"
+```
 
 ### Automatically mark merged Pull Requests as read
 
