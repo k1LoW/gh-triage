@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.8.0](https://github.com/k1LoW/gh-triage/compare/v0.7.1...v0.8.0) - 2025-07-30
+- feat: add support for marking notifications as done by @k1LoW in https://github.com/k1LoW/gh-triage/pull/31
+
 ## [v0.7.1](https://github.com/k1LoW/gh-triage/compare/v0.7.0...v0.7.1) - 2025-07-29
 - fix: correct state color handling by @k1LoW in https://github.com/k1LoW/gh-triage/pull/29
 
