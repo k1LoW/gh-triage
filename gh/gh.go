@@ -25,14 +25,15 @@ import (
 )
 
 type Client struct {
-	config    *profile.Profile
-	client    *github.Client
-	w         io.Writer
-	doneLimit atomic.Int64 // Limit the number of issues/pull requests to mark as done
-	readLimit atomic.Int64 // Limit the number of issues/pull requests to read
-	openLimit atomic.Int64 // Limit the number of issues/pull requests to open
-	listLimit atomic.Int64 // Limit the number of issues/pull requests to list
-	mu        sync.Mutex   // Mutex to protect concurrent access to limits
+	config           *profile.Profile
+	client           *github.Client
+	w                io.Writer
+	doneLimit        atomic.Int64 // Limit the number of issues/pull requests to mark as done
+	unsubscribeLimit atomic.Int64 // Limit the number of issues/pull requests to unsubscribe from
+	readLimit        atomic.Int64 // Limit the number of issues/pull requests to read
+	openLimit        atomic.Int64 // Limit the number of issues/pull requests to open
+	listLimit        atomic.Int64 // Limit the number of issues/pull requests to list
+	mu               sync.Mutex   // Mutex to protect concurrent access to limits
 }
 
 var (
@@ -61,6 +62,7 @@ func New(cfg *profile.Profile, w io.Writer) (*Client, error) {
 
 func (c *Client) Triage(ctx context.Context) error {
 	c.doneLimit.Store(int64(c.config.Done.Max))
+	c.unsubscribeLimit.Store(int64(c.config.Unsubscribe.Max))
 	c.readLimit.Store(int64(c.config.Read.Max))
 	c.openLimit.Store(int64(c.config.Open.Max))
 	c.listLimit.Store(int64(c.config.List.Max))
@@ -320,14 +322,27 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			}
 		}
 		if !done {
-			if c.readLimit.Load() > 0 {
-				read := evalCond(c.config.Read.Conditions, m)
-				if read {
-					if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
-						return fmt.Errorf("failed to mark notification as read: %w", err)
+			unsubscribe := false
+			if c.unsubscribeLimit.Load() > 0 {
+				unsubscribe = evalCond(c.config.Unsubscribe.Conditions, m)
+				if unsubscribe {
+					if _, err := c.client.Activity.DeleteThreadSubscription(ctx, n.GetID()); err != nil {
+						return fmt.Errorf("failed to unsubscribe from notification: %w", err)
 					}
-					c.readLimit.Add(-1)
-					m["unread"] = false // Mark as read if conditions are met
+					c.unsubscribeLimit.Add(-1)
+					m["unread"] = false // Mark as read if unsubscribed
+				}
+			}
+			if !unsubscribe {
+				if c.readLimit.Load() > 0 {
+					read := evalCond(c.config.Read.Conditions, m)
+					if read {
+						if _, err := c.client.Activity.MarkThreadRead(ctx, n.GetID()); err != nil {
+							return fmt.Errorf("failed to mark notification as read: %w", err)
+						}
+						c.readLimit.Add(-1)
+						m["unread"] = false // Mark as read if conditions are met
+					}
 				}
 			}
 		}
