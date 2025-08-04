@@ -14,10 +14,11 @@ type Action struct {
 }
 
 type Profile struct {
-	Done Action `yaml:"done,omitempty"` // Mark as done issues/pull requests that match the conditions
-	Read Action `yaml:"read,omitempty"` // Mark as read issues/pull requests that match the conditions
-	Open Action `yaml:"open,omitempty"` // Open issues/pull requests that match the conditions
-	List Action `yaml:"list,omitempty"` // List issues/pull requests that match the conditions
+	Done        Action `yaml:"done,omitempty"`        // Mark as done issues/pull requests that match the conditions
+	Unsubscribe Action `yaml:"unsubscribe,omitempty"` // Unsubscribe from issues/pull requests that match the conditions
+	Read        Action `yaml:"read,omitempty"`        // Mark as read issues/pull requests that match the conditions
+	Open        Action `yaml:"open,omitempty"`        // Open issues/pull requests that match the conditions
+	List        Action `yaml:"list,omitempty"`        // List issues/pull requests that match the conditions
 }
 
 var defaultProfile = &Profile{
@@ -27,6 +28,10 @@ var defaultProfile = &Profile{
 			"merged",
 			"closed",
 		},
+	},
+	Unsubscribe: Action{
+		Max:        0,
+		Conditions: []string{},
 	},
 	Read: Action{
 		Max:        0,

@@ -6,6 +6,7 @@ Key features of `gh-triage` are:
 
 - **Done**: Mark Issues and Pull Requests that match specified conditions as done
 - **Read**: Mark Issues and Pull Requests that match specified conditions as read
+- **Unsubscribe**: Unsubscribe from notifications for Issues and Pull Requests that match specified conditions
 - **Open**: Open Issues and Pull Requests that match specified conditions in a browser
 - **List**: Display Issues and Pull Requests that match specified conditions in a list
 
@@ -93,6 +94,7 @@ list:
 
 - `done`: Conditions and maximum number for marking as done
 - `read`: Conditions and maximum number for marking as read
+- `unsubscribe`: Conditions and maximum number for unsubscribing from notifications
 - `open`: Conditions and maximum number for opening in browser
 - `list`: Conditions and maximum number for listing
 
@@ -255,4 +257,14 @@ read:
   max: 1000
   conditions:
     - "is_pull_request && state == 'open' && !approved"
+```
+
+### Unsubscribe from closed/merged Issues/Pull Requests
+
+```yaml
+unsubscribe:
+  max: 100
+  conditions:
+    - "closed" # Closed Issues
+    - "merged" # Merged Pull Requests
 ```
