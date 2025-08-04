@@ -239,7 +239,6 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			case "success":
 				continue
 			case "failure", "starup_failure":
-				fmt.Println("status:", status.GetState(), "context:", status.GetContext())
 				statusPassed = false
 				statusFailed = true
 				break L
