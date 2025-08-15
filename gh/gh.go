@@ -42,6 +42,7 @@ var (
 	openC   = color.RGB(31, 136, 61)
 	mergedC = color.RGB(130, 80, 223)
 	closedC = color.RGB(207, 34, 46)
+	draftC  = color.RGB(89, 99, 110)
 
 	passedC     = color.RGB(31, 136, 61)
 	inProgressC = color.RGB(219, 171, 10)
@@ -352,7 +353,11 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			mark := "▬"
 			switch {
 			case m["state"] == "open":
-				mark = openC.Sprint(mark)
+				if draft, ok := m["draft"].(bool); ok && draft {
+					mark = draftC.Sprint(mark)
+				} else {
+					mark = openC.Sprint(mark)
+				}
 			case isMerged:
 				mark = mergedC.Sprint(mark)
 			case m["state"] == "closed":
