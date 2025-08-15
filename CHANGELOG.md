@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.10.0](https://github.com/k1LoW/gh-triage/compare/v0.9.0...v0.10.0) - 2025-08-15
+- feat: support draft color mark by @k1LoW in https://github.com/k1LoW/gh-triage/pull/38
+
 ## [v0.9.0](https://github.com/k1LoW/gh-triage/compare/v0.8.1...v0.9.0) - 2025-08-04
 - feat: add support unsubscribing notifications by @k1LoW in https://github.com/k1LoW/gh-triage/pull/35
 
