@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.10.1](https://github.com/k1LoW/gh-triage/compare/v0.10.0...v0.10.1) - 2025-10-02
+- fix: skip unsupported GitHub discussion notifications by @k1LoW in https://github.com/k1LoW/gh-triage/pull/42
+
 ## [v0.10.0](https://github.com/k1LoW/gh-triage/compare/v0.9.0...v0.10.0) - 2025-08-15
 - feat: support draft color mark by @k1LoW in https://github.com/k1LoW/gh-triage/pull/38
 
