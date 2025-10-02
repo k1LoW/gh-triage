@@ -287,6 +287,9 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 		htmlURL = r.GetHTMLURL()
 		m["html_url"] = r.GetHTMLURL()
+	case "Discussion":
+		// Discussions are not supported yet
+		return nil // Skip discussions for now
 	default:
 		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
 		return nil // Skip unknown subject types
