@@ -2,9 +2,11 @@ package gh
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"path"
 	"slices"
@@ -28,6 +30,7 @@ type Client struct {
 	config           *profile.Profile
 	client           *github.Client
 	w                io.Writer
+	verbose          bool
 	doneLimit        atomic.Int64 // Limit the number of issues/pull requests to mark as done
 	unsubscribeLimit atomic.Int64 // Limit the number of issues/pull requests to unsubscribe from
 	readLimit        atomic.Int64 // Limit the number of issues/pull requests to read
@@ -49,15 +52,16 @@ var (
 	failedC     = color.RGB(207, 34, 46)
 )
 
-func New(cfg *profile.Profile, w io.Writer) (*Client, error) {
+func New(cfg *profile.Profile, w io.Writer, verbose bool) (*Client, error) {
 	client, err := factory.NewGithubClient()
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
-		config: cfg,
-		client: client,
-		w:      w,
+		config:  cfg,
+		client:  client,
+		w:       w,
+		verbose: verbose,
 	}, nil
 }
 
@@ -159,6 +163,13 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["number"] = number
 		issue, _, err := c.client.Issues.Get(ctx, owner, repo, number)
 		if err != nil {
+			var errResp *github.ErrorResponse
+			if errors.As(err, &errResp) && errResp.Response.StatusCode == http.StatusNotFound {
+				if c.verbose {
+					slog.Warn("Issue not found, skipping", "owner", owner, "repo", repo, "number", number)
+				}
+				return nil
+			}
 			return fmt.Errorf("failed to get issue: %w", err)
 		}
 		htmlURL = issue.GetHTMLURL()
@@ -182,6 +193,13 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		m["number"] = number
 		pr, _, err := c.client.PullRequests.Get(ctx, owner, repo, number)
 		if err != nil {
+			var errResp *github.ErrorResponse
+			if errors.As(err, &errResp) && errResp.Response.StatusCode == http.StatusNotFound {
+				if c.verbose {
+					slog.Warn("Pull request not found, skipping", "owner", owner, "repo", repo, "number", number)
+				}
+				return nil
+			}
 			return fmt.Errorf("failed to get pull request: %w", err)
 		}
 		htmlURL = pr.GetHTMLURL()
@@ -283,6 +301,13 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		}
 		r, _, err := c.client.Repositories.GetRelease(ctx, owner, repo, int64(id))
 		if err != nil {
+			var errResp *github.ErrorResponse
+			if errors.As(err, &errResp) && errResp.Response.StatusCode == http.StatusNotFound {
+				if c.verbose {
+					slog.Warn("Release not found, skipping", "owner", owner, "repo", repo, "id", id)
+				}
+				return nil
+			}
 			return fmt.Errorf("failed to get release: %w", err)
 		}
 		htmlURL = r.GetHTMLURL()
