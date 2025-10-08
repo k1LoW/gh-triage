@@ -268,3 +268,11 @@ unsubscribe:
     - "closed" # Closed Issues
     - "merged" # Merged Pull Requests
 ```
+
+## Contributing
+
+To use this project from source, instead of a release:
+
+    go build .
+    gh extension remove triage
+    gh extension install .
