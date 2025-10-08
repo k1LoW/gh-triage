@@ -42,6 +42,7 @@ var (
 	profileFlag  string
 	watch        bool
 	intervalFlag string
+	verbose      bool
 )
 
 var rootCmd = &cobra.Command{
@@ -56,7 +57,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		c, err := gh.New(cfg, colorable.NewColorableStdout())
+		c, err := gh.New(cfg, colorable.NewColorableStdout(), verbose)
 		if err != nil {
 			return err
 		}
@@ -128,4 +129,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&profileFlag, "profile", "p", "", "Profile name for configuration file")
 	rootCmd.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "Watch for notifications")
 	rootCmd.PersistentFlags().StringVarP(&intervalFlag, "interval", "i", "5min", "Interval for watching notifications (e.g., 5min, 1hour)")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "V", false, "Verbose output")
 }
