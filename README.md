@@ -1,14 +1,14 @@
 # gh-triage
 
-`gh-triage` is a tool that helps you manage and triage GitHub issues and pull requests through [unread notifications](https://github.com/notifications?query=is%3Aunread).
+`gh-triage` is a tool that helps you manage and triage GitHub issues, pull requests, and discussions through [unread notifications](https://github.com/notifications?query=is%3Aunread).
 
 Key features of `gh-triage` are:
 
-- **Done**: Mark Issues and Pull Requests that match specified conditions as done
-- **Read**: Mark Issues and Pull Requests that match specified conditions as read
-- **Unsubscribe**: Unsubscribe from notifications for Issues and Pull Requests that match specified conditions
-- **Open**: Open Issues and Pull Requests that match specified conditions in a browser
-- **List**: Display Issues and Pull Requests that match specified conditions in a list
+- **Done**: Mark Issues, Pull Requests, and Discussions that match specified conditions as done
+- **Read**: Mark Issues, Pull Requests, and Discussions that match specified conditions as read
+- **Unsubscribe**: Unsubscribe from notifications for Issues, Pull Requests, and Discussions that match specified conditions
+- **Open**: Open Issues, Pull Requests, and Discussions that match specified conditions in a browser
+- **List**: Display Issues, Pull Requests, and Discussions that match specified conditions in a list
 
 ref: [Managing notifications from your inbox](https://docs.github.com/en/account-and-profile/managing-subscriptions-and-notifications-on-github/viewing-and-triaging-notifications/managing-notifications-from-your-inbox)
 
@@ -106,35 +106,38 @@ Each action has the following parameters:
 
 gh-triage retrieves the following information for each notification, which can be used in condition evaluation:
 
-| Field | Type | Pull Request Description | Issue Description |
-|-------|------|-------------------------|-------------------|
-| `is_pull_request` | `bool` | Always `true` for Pull Requests | Always `false` for Issues |
-| `me` | `string` | Username of authenticated user | Username of authenticated user |
-| `title` | `string` | The title of the Pull Request | The title of the Issue |
-| `owner` | `string` | Repository owner name | Repository owner name |
-| `repo` | `string` | Repository name | Repository name |
-| `number` | `int` | Pull Request number | Issue number |
-| `state` | `string` | State of the PR (`open`, `closed`) | State of the Issue (`open`, `closed`) |
-| `open` | `bool` | Whether the PR is open | Whether the Issue is open |
-| `closed` | `bool` | Whether the PR is closed | Whether the Issue is closed |
-| `labels` | `[]string` | List of labels attached to the PR | List of labels attached to the Issue |
-| `assignees` | `[]string` | List of assigned users | List of assigned users |
-| `author` | `string` | Username of the PR author | Username of the Issue author |
-| `html_url` | `string` | GitHub URL of the PR | GitHub URL of the Issue |
-| `draft` | `bool` | Whether the PR is draft | N/A |
-| `merged` | `bool` | Whether the PR has been merged | N/A |
-| `mergeable` | `bool` | Whether the PR is mergeable | N/A |
-| `mergeable_state` | `string` | Mergeable state of the PR | N/A |
-| `reviewers` | `[]string` | List of requested reviewers | N/A |
-| `review_teams` | `[]string` | List of requested review teams | N/A |
-| `approved` | `bool` | Whether the PR has been approved | N/A |
-| `review_states` | `[]string` | History of review states | N/A |
-| `status_passed` | `bool` | Whether status checks have passed | N/A |
-| `checks_passed` | `bool` | Whether checks have passed | N/A |
-| `passed` | `bool` | Whether both status checks and checks have passed | N/A |
-| `failed` | `bool` | Whether status checks or checks have failed | N/A |
-| `in_progress` | `bool` | Whether status checks or checks are in progress | N/A |
-| `unread` | `bool` | Whether the PR is not marked as read | Whether the Issue is not marked as read |
+| Field | Type | Pull Request Description | Issue Description | Discussion Description |
+|-------|------|-------------------------|-------------------|------------------------|
+| `is_pull_request` | `bool` | Always `true` for Pull Requests | Always `false` for Issues | Always `false` for Discussions |
+| `is_issue` | `bool` | Always `false` for Pull Requests | Always `true` for Issues | Always `false` for Discussions |
+| `is_discussion` | `bool` | Always `false` for Pull Requests | Always `false` for Issues | Always `true` for Discussions |
+| `me` | `string` | Username of authenticated user | Username of authenticated user | Username of authenticated user |
+| `title` | `string` | The title of the Pull Request | The title of the Issue | The title of the Discussion |
+| `owner` | `string` | Repository owner name | Repository owner name | Repository owner name |
+| `repo` | `string` | Repository name | Repository name | Repository name |
+| `number` | `int` | Pull Request number | Issue number | Discussion number |
+| `state` | `string` | State of the PR (`open`, `closed`) | State of the Issue (`open`, `closed`) | State of the Discussion (`open`, `closed`) |
+| `open` | `bool` | Whether the PR is open | Whether the Issue is open | Whether the Discussion is open |
+| `closed` | `bool` | Whether the PR is closed | Whether the Issue is closed | Whether the Discussion is closed |
+| `labels` | `[]string` | List of labels attached to the PR | List of labels attached to the Issue | List of labels attached to the Discussion |
+| `assignees` | `[]string` | List of assigned users | List of assigned users | N/A |
+| `author` | `string` | Username of the PR author | Username of the Issue author | Username of the Discussion author |
+| `html_url` | `string` | GitHub URL of the PR | GitHub URL of the Issue | GitHub URL of the Discussion |
+| `draft` | `bool` | Whether the PR is draft | N/A | N/A |
+| `merged` | `bool` | Whether the PR has been merged | N/A | N/A |
+| `mergeable` | `bool` | Whether the PR is mergeable | N/A | N/A |
+| `mergeable_state` | `string` | Mergeable state of the PR | N/A | N/A |
+| `reviewers` | `[]string` | List of requested reviewers | N/A | N/A |
+| `review_teams` | `[]string` | List of requested review teams | N/A | N/A |
+| `approved` | `bool` | Whether the PR has been approved | N/A | N/A |
+| `review_states` | `[]string` | History of review states | N/A | N/A |
+| `status_passed` | `bool` | Whether status checks have passed | N/A | N/A |
+| `checks_passed` | `bool` | Whether checks have passed | N/A | N/A |
+| `passed` | `bool` | Whether both status checks and checks have passed | N/A | N/A |
+| `failed` | `bool` | Whether status checks or checks have failed | N/A | N/A |
+| `in_progress` | `bool` | Whether status checks or checks are in progress | N/A | N/A |
+| `answered` | `bool` | N/A | N/A | Whether the Discussion has been answered |
+| `unread` | `bool` | Whether the PR is not marked as read | Whether the Issue is not marked as read | Whether the Discussion is not marked as read |
 
 ## Condition Evaluation System
 
@@ -145,10 +148,12 @@ Conditions are evaluated using the [expr-lang](https://expr-lang.org/) library. 
 ```yaml
 conditions:
   - "merged"                    # Merged Pull Request
-  - "closed"                    # Closed Issue/PR
+  - "closed"                    # Closed Issue/PR/Discussion
   - "approved"                  # Approved Pull Request
   - "is_pull_request"           # Pull Request
   - "is_issue"                  # Issue
+  - "is_discussion"             # Discussion
+  - "answered"                  # Answered Discussion
   - "state == 'open'"           # Open state
   - "passed"                    # All checks passed
 ```
@@ -265,8 +270,26 @@ read:
 unsubscribe:
   max: 100
   conditions:
-    - "closed" # Closed Issues
+    - "closed" # Closed Issues/Discussions
     - "merged" # Merged Pull Requests
+```
+
+### Mark answered Discussions as done
+
+```yaml
+done:
+  max: 100
+  conditions:
+    - "is_discussion && answered"
+```
+
+### List unanswered Discussions
+
+```yaml
+list:
+  max: 100
+  conditions:
+    - "is_discussion && !answered && open"
 ```
 
 ## Contributing
