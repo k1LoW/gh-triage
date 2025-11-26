@@ -54,7 +54,7 @@ var (
 	failedC     = color.RGB(207, 34, 46)
 )
 
-// discussionQuery is the GraphQL query for fetching a discussion
+// discussionQuery is the GraphQL query for fetching a discussion.
 type discussionQuery struct {
 	Repository struct {
 		Discussion struct {
@@ -352,7 +352,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		variables := map[string]any{
 			"owner":  githubv4.String(owner),
 			"repo":   githubv4.String(repo),
-			"number": githubv4.Int(number),
+			"number": githubv4.Int(int32(number)), //nolint:gosec
 		}
 		if err := c.v4Client.Query(ctx, &q, variables); err != nil {
 			if c.verbose {
