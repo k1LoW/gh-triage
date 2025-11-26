@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.11.0](https://github.com/k1LoW/gh-triage/compare/v0.10.2...v0.11.0) - 2025-11-26
+- chore: setup tagpr labels by @k1LoW in https://github.com/k1LoW/gh-triage/pull/50
+- feat: support discussions by @k1LoW in https://github.com/k1LoW/gh-triage/pull/52
+
 ## [v0.10.2](https://github.com/k1LoW/gh-triage/compare/v0.10.1...v0.10.2) - 2025-10-08
 - Fix: Ignore 404 Not Found errors and add --verbose flag by @vorburger in https://github.com/k1LoW/gh-triage/pull/45
 - docs: How to run from local source by @vorburger in https://github.com/k1LoW/gh-triage/pull/46
