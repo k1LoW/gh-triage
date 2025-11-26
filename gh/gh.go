@@ -23,12 +23,14 @@ import (
 	"github.com/pkg/browser"
 	"github.com/samber/lo"
 	"github.com/savioxavier/termlink"
+	"github.com/shurcooL/githubv4"
 	"golang.org/x/sync/errgroup"
 )
 
 type Client struct {
 	config           *profile.Profile
 	client           *github.Client
+	v4Client         *githubv4.Client
 	w                io.Writer
 	verbose          bool
 	doneLimit        atomic.Int64 // Limit the number of issues/pull requests to mark as done
@@ -52,16 +54,41 @@ var (
 	failedC     = color.RGB(207, 34, 46)
 )
 
+// discussionQuery is the GraphQL query for fetching a discussion.
+type discussionQuery struct {
+	Repository struct {
+		Discussion struct {
+			Title      string
+			URL        string
+			Closed     bool
+			Locked     bool
+			Number     int
+			IsAnswered bool
+			Author     struct {
+				Login string
+			}
+			Labels struct {
+				Nodes []struct {
+					Name string
+				}
+			} `graphql:"labels(first: 100)"`
+		} `graphql:"discussion(number: $number)"`
+	} `graphql:"repository(owner: $owner, name: $repo)"`
+}
+
 func New(cfg *profile.Profile, w io.Writer, verbose bool) (*Client, error) {
 	client, err := factory.NewGithubClient()
 	if err != nil {
 		return nil, err
 	}
+	v4Client := githubv4.NewClient(client.Client())
+
 	return &Client{
-		config:  cfg,
-		client:  client,
-		w:       w,
-		verbose: verbose,
+		config:   cfg,
+		client:   client,
+		v4Client: v4Client,
+		w:        w,
+		verbose:  verbose,
 	}, nil
 }
 
@@ -131,9 +158,11 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	m["unread"] = true
 	m["is_issue"] = false
 	m["is_pull_request"] = false
+	m["is_discussion"] = false
 	m["is_release"] = false
 	m["number"] = -1
 	m["approved"] = false
+	m["answered"] = false
 	m["review_states"] = []string{}
 	m["state"] = "unknown"
 	m["draft"] = false
@@ -313,8 +342,35 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		htmlURL = r.GetHTMLURL()
 		m["html_url"] = r.GetHTMLURL()
 	case "Discussion":
-		// Discussions are not supported yet
-		return nil // Skip discussions for now
+		m["is_discussion"] = true
+		number, err = strconv.Atoi(path.Base(u.Path))
+		if err != nil {
+			return fmt.Errorf("failed to parse discussion number from URL: %w", err)
+		}
+		m["number"] = number
+		var q discussionQuery
+		variables := map[string]any{
+			"owner":  githubv4.String(owner),
+			"repo":   githubv4.String(repo),
+			"number": githubv4.Int(int32(number)), //nolint:gosec
+		}
+		if err := c.v4Client.Query(ctx, &q, variables); err != nil {
+			if c.verbose {
+				slog.Warn("Discussion not found or error fetching, skipping", "owner", owner, "repo", repo, "number", number, "error", err)
+			}
+			return nil
+		}
+		discussion := q.Repository.Discussion
+		htmlURL = discussion.URL
+		m["state"] = lo.Ternary(discussion.Closed, "closed", "open")
+		m["open"] = !discussion.Closed
+		m["closed"] = discussion.Closed
+		m["answered"] = discussion.IsAnswered
+		m["labels"] = lo.Map(discussion.Labels.Nodes, func(l struct{ Name string }, _ int) string {
+			return l.Name
+		})
+		m["author"] = discussion.Author.Login
+		m["html_url"] = discussion.URL
 	default:
 		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
 		return nil // Skip unknown subject types
