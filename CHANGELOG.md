@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.11.1](https://github.com/k1LoW/gh-triage/compare/v0.11.0...v0.11.1) - 2025-12-17
+- chore(deps): bump github.com/expr-lang/expr from 1.17.5 to 1.17.7 by @dependabot[bot] in https://github.com/k1LoW/gh-triage/pull/53
+
 ## [v0.11.0](https://github.com/k1LoW/gh-triage/compare/v0.10.2...v0.11.0) - 2025-11-26
 - chore: setup tagpr labels by @k1LoW in https://github.com/k1LoW/gh-triage/pull/50
 - feat: support discussions by @k1LoW in https://github.com/k1LoW/gh-triage/pull/52
