@@ -19,18 +19,20 @@ lint:
 
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
-	go install github.com/Songmu/gocredits/cmd/gocredits@latest
+
+credits:
+	go install github.com/Songmu/gocredits/cmd/gocredits@v1.0.0
+	gocredits . > CREDITS
 
 prerelease:
 	git pull origin main --tag
 	go mod tidy
 	ghch -w -N ${VER}
-	gocredits -w .
+	$(MAKE) credits
 	git add CHANGELOG.md CREDITS go.mod go.sum
 	git commit -m'Bump up version number'
 	git tag ${VER}
 
-prerelease_for_tagpr: depsdev
-	go mod download
-	gocredits -w .
+prerelease_for_tagpr:
+	$(MAKE) credits
 	git add CHANGELOG.md CREDITS go.mod go.sum
