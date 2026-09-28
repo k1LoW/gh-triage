@@ -20,6 +20,8 @@ lint:
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
 
+# Phony because a case-insensitive filesystem takes CREDITS as this target's output.
+.PHONY: credits
 credits:
 	go install github.com/Songmu/gocredits/cmd/gocredits@v1.0.0
 	gocredits . > CREDITS
