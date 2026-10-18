@@ -98,6 +98,7 @@ func (c *Client) Triage(ctx context.Context) error {
 	c.readLimit.Store(int64(c.config.Read.Max))
 	c.openLimit.Store(int64(c.config.Open.Max))
 	c.listLimit.Store(int64(c.config.List.Max))
+	var me *github.User
 	page := 1
 	for {
 		notifications, _, err := c.client.Activity.ListNotifications(ctx, &github.NotificationListOptions{
@@ -112,10 +113,16 @@ func (c *Client) Triage(ctx context.Context) error {
 		if len(notifications) == 0 {
 			break
 		}
+		if me == nil && (c.readLimit.Load() > 0 || c.openLimit.Load() > 0 || c.listLimit.Load() > 0) {
+			me, _, err = c.client.Users.Get(ctx, "")
+			if err != nil {
+				return fmt.Errorf("failed to get authenticated user: %w", err)
+			}
+		}
 		eg, ctx := errgroup.WithContext(ctx)
 		for _, n := range notifications {
 			eg.Go(func() error {
-				return c.action(ctx, n)
+				return c.action(ctx, n, me.GetLogin())
 			})
 		}
 		if err := eg.Wait(); err != nil {
@@ -127,7 +134,7 @@ func (c *Client) Triage(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) action(ctx context.Context, n *github.Notification) error {
+func (c *Client) action(ctx context.Context, n *github.Notification, me string) error {
 	if c.readLimit.Load() <= 0 && c.openLimit.Load() <= 0 && c.listLimit.Load() <= 0 {
 		return nil // No more actions to perform
 	}
@@ -143,11 +150,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	m["owner"] = owner
 	m["repo"] = repo
 
-	me, _, err := c.client.Users.Get(ctx, "")
-	if err != nil {
-		return fmt.Errorf("failed to get authenticated user: %w", err)
-	}
-	m["me"] = me.GetLogin()
+	m["me"] = me
 
 	subjectType := n.GetSubject().GetType()
 	var htmlURL string
