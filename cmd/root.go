@@ -57,6 +57,11 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		restoreHost, err := applyProfileHost(cfg.Host)
+		if err != nil {
+			return err
+		}
+		defer restoreHost()
 		c, err := gh.New(cfg, colorable.NewColorableStdout(), verbose)
 		if err != nil {
 			return err
@@ -130,4 +135,22 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&watch, "watch", "w", false, "Watch for notifications")
 	rootCmd.PersistentFlags().StringVarP(&intervalFlag, "interval", "i", "5min", "Interval for watching notifications (e.g., 5min, 1hour)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "V", false, "Verbose output")
+}
+
+// applyProfileHost supplies the profile default without overriding an explicit GH_HOST.
+func applyProfileHost(host string) (func(), error) {
+	previous, exists := os.LookupEnv("GH_HOST")
+	if host == "" || previous != "" {
+		return func() {}, nil
+	}
+	if err := os.Setenv("GH_HOST", host); err != nil {
+		return nil, fmt.Errorf("failed to set profile host: %w", err)
+	}
+	return func() {
+		if exists {
+			_ = os.Setenv("GH_HOST", previous)
+		} else {
+			_ = os.Unsetenv("GH_HOST")
+		}
+	}, nil
 }

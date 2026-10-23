@@ -14,6 +14,8 @@ type Action struct {
 }
 
 type Profile struct {
+	Host string `yaml:"host,omitempty"` // GitHub hostname for this profile
+
 	Done        Action `yaml:"done,omitempty"`        // Mark as done issues/pull requests that match the conditions
 	Unsubscribe Action `yaml:"unsubscribe,omitempty"` // Unsubscribe from issues/pull requests that match the conditions
 	Read        Action `yaml:"read,omitempty"`        // Mark as read issues/pull requests that match the conditions

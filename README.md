@@ -224,6 +224,23 @@ read:
 |--------|-------|-------------|
 | `--profile` | `-p` | Specify profile name for configuration file |
 
+### Per-profile GitHub host
+
+Set `host` in a profile to select a GitHub Enterprise Server:
+
+```yaml
+host: git.example.com
+list:
+  max: 100
+  conditions:
+    - "*"
+```
+
+`gh triage -p work` uses the host from the work profile for REST and GraphQL
+requests and resolves credentials through the existing GitHub authentication
+configuration. An explicit `GH_HOST` takes precedence. Profiles without `host`
+keep the existing host selection behavior.
+
 ### Examples
 
 ```bash

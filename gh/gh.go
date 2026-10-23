@@ -81,7 +81,12 @@ func New(cfg *profile.Profile, w io.Writer, verbose bool) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	v4Client := githubv4.NewClient(client.Client())
+	return newClient(cfg, client, w, verbose), nil
+}
+
+func newClient(cfg *profile.Profile, client *github.Client, w io.Writer, verbose bool) *Client {
+	_, _, _, v4Endpoint := factory.GetTokenAndEndpoints()
+	v4Client := githubv4.NewEnterpriseClient(v4Endpoint, client.Client())
 
 	return &Client{
 		config:   cfg,
@@ -89,7 +94,7 @@ func New(cfg *profile.Profile, w io.Writer, verbose bool) (*Client, error) {
 		v4Client: v4Client,
 		w:        w,
 		verbose:  verbose,
-	}, nil
+	}
 }
 
 func (c *Client) Triage(ctx context.Context) error {

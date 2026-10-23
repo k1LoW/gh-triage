@@ -303,3 +303,22 @@ func TestLoad_InvalidYAML(t *testing.T) {
 		t.Error("Expected error when loading invalid YAML, got nil")
 	}
 }
+
+func TestLoad_Host(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dir)
+	profileDir := filepath.Join(dir, "gh-triage")
+	if err := os.MkdirAll(profileDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(profileDir, "work.yml"), []byte("host: git.example.com\nlist:\n  max: 5\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load("work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Host != "git.example.com" || cfg.List.Max != 5 {
+		t.Fatalf("unexpected profile: %+v", cfg)
+	}
+}
