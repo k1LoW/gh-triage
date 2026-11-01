@@ -75,7 +75,7 @@ This ensures a smooth transition without losing your existing configuration.
 ```yaml
 done:
   max: 1000
-  conditions: # Auto-mark merged and closed PRs / issues as done
+  conditions: # Auto-mark merged and closed PRs / issues / discussions / Dependabot alert notifications as done
     - "merged"
     - "closed"
 
@@ -139,6 +139,22 @@ gh-triage retrieves the following information for each notification, which can b
 | `answered` | `bool` | N/A | N/A | Whether the Discussion has been answered |
 | `unread` | `bool` | Whether the PR is not marked as read | Whether the Issue is not marked as read | Whether the Discussion is not marked as read |
 
+### Dependabot alert notifications
+
+GitHub sends Dependabot alert notifications per repository, not per alert, so the following fields describe the repository's alerts. `me`, `title`, `owner`, `repo` and `unread` work as for other notifications, and the remaining fields do not apply.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_dependabot_alert` | `bool` | Always `true` for Dependabot alert notifications, `false` for other notifications |
+| `state` | `string` | `open` if the repository has open Dependabot alerts, otherwise `closed` |
+| `open` | `bool` | Whether the repository has open Dependabot alerts |
+| `closed` | `bool` | Whether the repository has no open Dependabot alerts |
+| `html_url` | `string` | URL of the repository's Dependabot alerts page |
+
+`closed` only means that there are no open alerts right now, and a new alert can arrive later. The default `done` condition `closed` matches these notifications, so they are marked as done once the repository has no open alerts. Do not unsubscribe from them unless you want to mute the thread.
+
+Reading alerts requires the `security_events` scope (included in `repo`), or `public_repo` for public repositories only. Notifications of repositories whose alerts cannot be read are skipped.
+
 ## Condition Evaluation System
 
 Conditions are evaluated using the [expr-lang](https://expr-lang.org/) library. You can write conditions such as:
@@ -148,11 +164,12 @@ Conditions are evaluated using the [expr-lang](https://expr-lang.org/) library. 
 ```yaml
 conditions:
   - "merged"                    # Merged Pull Request
-  - "closed"                    # Closed Issue/PR/Discussion
+  - "closed"                    # Closed Issue/PR/Discussion, or Dependabot alert notification without open alerts
   - "approved"                  # Approved Pull Request
   - "is_pull_request"           # Pull Request
   - "is_issue"                  # Issue
   - "is_discussion"             # Discussion
+  - "is_dependabot_alert"       # Dependabot alert notification
   - "answered"                  # Answered Discussion
   - "state == 'open'"           # Open state
   - "passed"                    # All checks passed
@@ -270,7 +287,7 @@ read:
 unsubscribe:
   max: 100
   conditions:
-    - "closed" # Closed Issues/Discussions
+    - "(is_issue || is_pull_request || is_discussion) && closed" # Closed Issues/Pull Requests/Discussions
     - "merged" # Merged Pull Requests
 ```
 
@@ -290,6 +307,15 @@ list:
   max: 100
   conditions:
     - "is_discussion && !answered && open"
+```
+
+### List Dependabot alert notifications with open alerts
+
+```yaml
+list:
+  max: 100
+  conditions:
+    - "is_dependabot_alert && open"
 ```
 
 ## Contributing

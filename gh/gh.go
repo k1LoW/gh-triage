@@ -160,6 +160,7 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 	m["is_pull_request"] = false
 	m["is_discussion"] = false
 	m["is_release"] = false
+	m["is_dependabot_alert"] = false
 	m["number"] = -1
 	m["approved"] = false
 	m["answered"] = false
@@ -371,6 +372,29 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 		})
 		m["author"] = discussion.Author.Login
 		m["html_url"] = discussion.URL
+	case "RepositoryDependabotAlertsThread":
+		m["is_dependabot_alert"] = true
+		// The thread covers a whole repository and has no subject URL, so its state is derived from the alerts.
+		alerts, _, err := c.client.Dependabot.ListRepoAlerts(ctx, owner, repo, &github.ListAlertsOptions{
+			State:       github.Ptr("open"),
+			ListOptions: github.ListOptions{PerPage: 1},
+		})
+		if err != nil {
+			var errResp *github.ErrorResponse
+			if errors.As(err, &errResp) && (errResp.Response.StatusCode == http.StatusForbidden || errResp.Response.StatusCode == http.StatusNotFound) {
+				if c.verbose {
+					slog.Warn("Dependabot alerts not readable, skipping", "owner", owner, "repo", repo, "error", err)
+				}
+				return nil
+			}
+			return fmt.Errorf("failed to list dependabot alerts: %w", err)
+		}
+		hasOpenAlerts := len(alerts) > 0
+		htmlURL = n.GetRepository().GetHTMLURL() + "/security/dependabot"
+		m["html_url"] = htmlURL
+		m["state"] = lo.Ternary(hasOpenAlerts, "open", "closed")
+		m["open"] = hasOpenAlerts
+		m["closed"] = !hasOpenAlerts
 	default:
 		slog.Warn("Unknown subject type", "type", subjectType, "url", n.GetSubject().GetURL())
 		return nil // Skip unknown subject types
@@ -457,8 +481,11 @@ func (c *Client) action(ctx context.Context, n *github.Notification) error {
 			} else {
 				statusMark = ""
 			}
-			number := mark + numberC.Sprintf(" %s/%s #%d", owner, repo, number) + " " + statusMark
-			if _, err := fmt.Fprintf(c.w, "%s\n", number); err != nil {
+			ref := fmt.Sprintf(" %s/%s", owner, repo)
+			if number > 0 {
+				ref += fmt.Sprintf(" #%d", number)
+			}
+			if _, err := fmt.Fprintf(c.w, "%s\n", mark+numberC.Sprint(ref)+" "+statusMark); err != nil {
 				return err
 			}
 			if termlink.SupportsHyperlinks() {
